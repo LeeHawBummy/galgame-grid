@@ -1,0 +1,145 @@
+# 如何部署到 Cloudflare Pages (免费 & 推荐)
+
+Cloudflare Pages 是目前最推荐的静态网站托管服务，**完全免费**，速度快，且不需要你维护服务器。
+
+以下是详细的保姆级教程：
+
+## 准备工作
+
+1.  你需要一个 [GitHub](https://github.com/) 账号。
+2.  你需要将本项目上传到 GitHub 仓库（如果你还没做的话）。
+
+## 步骤一：上传代码到 GitHub
+
+如果你已经把代码上传到了 GitHub，请跳过此步。
+
+1.  在 GitHub 上新建一个仓库（Create a new repository），比如叫 `anime-grid`。
+2.  在你的本地项目文件夹中打开终端，执行以下命令：
+
+```bash
+# 初始化 git (如果还没初始化)
+git init
+
+# 添加所有文件
+git add .
+
+# 提交更改
+git commit -m "Initial commit"
+
+# 关联远程仓库 (替换成你自己的仓库地址)
+git remote add origin https://github.com/你的用户名/anime-grid.git
+
+# 推送到 GitHub
+git push -u origin master
+```
+
+## 步骤二：在 Cloudflare Pages 上部署
+
+1.  访问 [Cloudflare Dashboard](https://dash.cloudflare.com/) 并注册/登录。
+2.  在左侧菜单点击 **"Workers & Pages"**。
+3.  点击蓝色的 **"Create application"** 按钮。
+4.  选择 **"Pages"** 标签页，然后点击 **"Connect to Git"**。
+5.  选择 **GitHub**，授权 Cloudflare 访问你的 GitHub 账号。
+6.  在列表中选择你刚才上传的 `anime-grid` 仓库，点击 **"Begin setup"**。
+
+## 步骤三：配置构建设置 (关键步骤)
+
+在 "Set up builds and deployments" 页面，请按如下填写：
+
+*   **Project name**: 默认即可（这将是你的域名前缀，例如 `anime-grid.pages.dev`）。
+*   **Production branch**: `master` (或者 `main`)。
+*   **Framework preset**: 选择 **Vue**。
+*   **Build command**: `npm run build` (Cloudflare 会自动填好)。
+*   **Build output directory**: `dist` (Cloudflare 会自动填好)。
+
+**环境变量 (可选但推荐):**
+如果你的项目需要 Bangumi 搜索功能，你需要在这里添加环境变量：
+1.  点击 **"Environment variables (advanced)"**。
+2.  添加变量：
+    *   Key: `VITE_BANGUMI_ACCESS_TOKEN`
+    *   Value: `你的Bangumi Token`
+    *   Key: `VITE_BANGUMI_USER_AGENT`
+    *   Value: `你的UserAgent`
+
+3.  点击 **"Save and Deploy"**。
+
+## 步骤三.5：绑定 D1 数据库 (至关重要)
+
+部署成功后，**你的网站现在还不能保存数据**，因为 Page 还没权限访问 D1 数据库。需手动绑定：
+
+1.  进入 **Workers & Pages** -> 选择你的 **`anime-grid`** 项目。
+2.  点击顶部的 **Settings** (设置) 标签页。
+3.  在左侧菜单点击 **Functions** (函数)。
+4.  向下滚动找到 **D1 Database Bindings** (D1 数据库绑定)。
+5.  点击 **Add binding** (添加绑定)：
+    *   **Variable name (变量名)**: 必须填 `DB` (注意大写，与代码一致)。
+    *   **D1 Database**: 选择 `anime-grid-db`。
+6.  点击 **Save**。
+    > **注意**：默认情况下这会应用到 **Production** (生产环境)。如果你希望在 **Preview** (预览环境，比如分支部署) 也能保存数据，你需要在同一个页面找到 "Preview" 标签页（或者在添加时选择环境），重复上述绑定步骤。
+7.  **重新部署 (Redeploy)**：
+    *   去 **Deployments** 标签页。
+    *   去 **Deployments** 标签页。
+    *   点击最新的那次部署右边的三个点 `...` -> **Retry deployment**。
+    *   *注意：变量绑定只有在重新部署后才会生效！*
+
+## 步骤四：等待部署完成
+
+Cloudflare 会自动开始下载代码、安装依赖、构建项目。
+*   通常只需要 1-2 分钟。
+*   完成后，你会看到 **"Success!"** 的提示。
+*   点击顶部的链接（例如 `https://anime-grid.pages.dev`），即可访问你的网站！
+
+## 以后如何更新？
+
+非常简单！你只需要修改本地代码，然后推送到 GitHub：
+
+```bash
+git add .
+git commit -m "更新了新功能"
+git push
+```
+
+Cloudflare 会自动检测到 GitHub 的变动，并自动为你重新构建和发布新版本。你什么都不用做！
+
+## 常见问题 (Troubleshooting)
+
+### 🔴 报错: `Must specify a project name` 或 `Missing entry-point`
+**原因**：你在 Cloudflare 后台的 "Build command" 里填错了命令。
+**解决方法**：
+1.  进入 Cloudflare Pages 后台 -> Settings -> Builds & deployments。
+2.  点击 "Edit settings"。
+3.  **Build command** 必须填：`npm run build` (千万不要填 `wrangler deploy`！)。
+4.  **Build output directory** 必须填：`dist`。
+5.  保存后，去 "Deployments" 标签页点击 "Retry deployment"。
+
+---
+
+## 方法二：使用命令行直接部署 (CLI)
+
+如果你遇到了 `Missing entry-point` 错误，或者不想使用 GitHub，可以在本地直接部署。
+
+### 1. 构建项目
+
+首先确保你已经生成了最新的 `dist` 目录：
+
+```bash
+npm run build
+```
+
+### 2. 使用 Wrangler 部署
+
+**错误的做法**：直接运行 `npx wrangler deploy` (这会被识别为部署 Worker 代码，导致报错)。
+
+**正确的做法**：使用 Pages 部署命令，并指定输出目录 `dist`：
+
+```bash
+npx wrangler pages deploy dist
+```
+
+### 3. 按照提示操作
+
+1.  它会提示你登录 Cloudflare 账号 (如果未登录)。
+2.  选择 "Create a new project" (如果是第一次)。
+3.  输入项目名称 (例如 `anime-grid`)。
+4.  输入 Production branch (通常填 `master` 或 `main`)。
+5.  等待上传完成，它会给你一个访问链接！
