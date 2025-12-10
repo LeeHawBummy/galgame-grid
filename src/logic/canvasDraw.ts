@@ -158,7 +158,7 @@ export class CanvasGenerator {
         this.ctx.font = `bold ${60}px ${THEME.typography.fontFamily}`
         this.ctx.textAlign = 'center'
         this.ctx.textBaseline = 'middle'
-        this.ctx.fillText(customTitle || '我的动漫人物喜好果然有问题', centerX, height / 2 - 20)
+        this.ctx.fillText(customTitle || '我的生涯Galgame评选', centerX, height / 2 - 20)
 
         this.ctx.fillStyle = THEME.colors.accent
         this.ctx.font = `bold ${32}px ${THEME.typography.fontFamily}`

@@ -24,9 +24,7 @@ export async function useBgmSearch(
     // 使用 Bangumi API 搜索角色/人物
     const isCharacter = type === 'character'
     const searchMode = isCharacter ? 'character' : 'person'
-    const apiPath = isCharacter
-      ? 'https://api.bgm.tv/v0/search/characters'
-      : 'https://api.bgm.tv/v0/search/persons'
+    
     
     // 使用代理 API
     const finalUrl = import.meta.env.PROD
@@ -66,8 +64,16 @@ export async function useBgmSearch(
     return items
   } else {
     // 使用 VNDB API 搜索游戏 (保持原有逻辑不变)
+    const filters = year
+        ? [
+            'and',
+            ['search', '=', keyword],
+            ['released', '>=', `${year}-01-01`],
+            ['released', '<=', `${year}-12-31`],
+          ]
+        : ['search', '=', keyword]
     const body = {
-      filters: ['search', '=', keyword], // ✅ kana 推荐用 ~ 搜索
+      filters, // ✅ kana 推荐用 = 搜索
       page: Math.floor(offset / 25) + 1,
       results: 25,
       fields: 'id,title,released,rating,platforms,image.url'

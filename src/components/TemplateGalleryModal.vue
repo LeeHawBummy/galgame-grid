@@ -18,6 +18,7 @@ const CATEGORY_MAP: Record<TemplateCategory, string> = {
   relation: '关系/CP',
   fun: '趣味/梗',
   nsfw: '绅士',
+  galgame:'galgame',
 }
 
 const categories = computed(() => {

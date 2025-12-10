@@ -48,15 +48,7 @@ const currentSlotIndex = ref<number | null>(null)
 
 const showTemplateModal = ref(false)
 
-function handleManualGuideOpen() {
-  shouldShowTrendingAfterGuide.value = false
-  showFirstTimeGuide.value = true
-}
 
-function selectTemplate(id: string) {
-  currentTemplateId.value = id
-  showTemplateModal.value = false
-}
 
 async function handleTrendingSelect(payload: { id: string, title: string }) {
   currentTemplateId.value = payload.id
