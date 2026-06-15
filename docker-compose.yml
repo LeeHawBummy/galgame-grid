@@ -1,0 +1,53 @@
+# VPS 自托管部署编排
+# 用法：
+#   1. 复制 .env.deploy.example 为 .env.deploy，填入你的凭证
+#   2. docker compose --env-file .env.deploy up -d --build
+#   3. 访问 http://你的服务器IP:8080
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_BANGUMI_ACCESS_TOKEN: ${VITE_BANGUMI_ACCESS_TOKEN}
+        VITE_BANGUMI_USER_AGENT: ${VITE_BANGUMI_USER_AGENT}
+        VITE_VNDB_API_KEY: ${VITE_VNDB_API_KEY}
+        VITE_APP_TITLE: ${VITE_APP_TITLE:-年度Galgame大赏}
+        VITE_APP_DESCRIPTION: ${VITE_APP_DESCRIPTION:-Galgame年度评选生成器}
+    container_name: galgame-backend
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/data/anime-grid.db
+      - SAVE_ENABLED=${SAVE_ENABLED:-true}
+      - BANGUMI_PROXY_UA=${VITE_BANGUMI_USER_AGENT}
+    volumes:
+      # SQLite 数据持久化（保存评选结果统计）
+      - ./data:/app/data
+    networks:
+      - galgame-net
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+      args:
+        VITE_BANGUMI_ACCESS_TOKEN: ${VITE_BANGUMI_ACCESS_TOKEN}
+        VITE_BANGUMI_USER_AGENT: ${VITE_BANGUMI_USER_AGENT}
+        VITE_VNDB_API_KEY: ${VITE_VNDB_API_KEY}
+        VITE_APP_TITLE: ${VITE_APP_TITLE:-年度Galgame大赏}
+        VITE_APP_DESCRIPTION: ${VITE_APP_DESCRIPTION:-Galgame年度评选生成器}
+    container_name: galgame-nginx
+    restart: unless-stopped
+    ports:
+      # 左侧是对外端口（默认 8080），右侧固定 80
+      - "${PUBLIC_PORT:-8080}:80"
+    depends_on:
+      - backend
+    networks:
+      - galgame-net
+
+networks:
+  galgame-net:
+    driver: bridge

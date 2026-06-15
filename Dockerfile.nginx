@@ -1,0 +1,27 @@
+# nginx 镜像：内含前端构建产物
+# 从 frontend-build 阶段拷贝 dist，避免 compose 用 named volume 取文件的麻烦
+
+# 复用主 Dockerfile 的前端构建阶段
+FROM node:22-alpine AS frontend-build
+WORKDIR /build
+COPY package.json package-lock.json* ./
+RUN npm ci --include=dev || npm install --include=dev
+COPY . .
+ARG VITE_BANGUMI_ACCESS_TOKEN=""
+ARG VITE_BANGUMI_USER_AGENT=""
+ARG VITE_VNDB_API_KEY=""
+ARG VITE_APP_TITLE="年度Galgame大赏"
+ARG VITE_APP_DESCRIPTION="Galgame年度评选生成器"
+ENV VITE_BANGUMI_ACCESS_TOKEN=$VITE_BANGUMI_ACCESS_TOKEN \
+    VITE_BANGUMI_USER_AGENT=$VITE_BANGUMI_USER_AGENT \
+    VITE_VNDB_API_KEY=$VITE_VNDB_API_KEY \
+    VITE_APP_TITLE=$VITE_APP_TITLE \
+    VITE_APP_DESCRIPTION=$VITE_APP_DESCRIPTION \
+    NODE_ENV=production
+RUN npm run build
+
+# 运行时：nginx + 静态文件
+FROM nginx:alpine
+COPY --from=frontend-build /build/dist /usr/share/nginx/html
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

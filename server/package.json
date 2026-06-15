@@ -1,0 +1,14 @@
+{
+  "name": "galgame-grid-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Node.js 后端代理（替代 Cloudflare Worker，用于 VPS 自托管部署）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0"
+  }
+}

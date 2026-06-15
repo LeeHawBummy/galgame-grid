@@ -1,0 +1,19 @@
+# 减小构建上下文、加速构建、避免泄露密钥
+node_modules
+dist
+.wrangler
+.git
+.gitignore
+*.md
+!nginx/default.conf
+
+# 本地环境变量（含密钥，绝不进镜像）
+.env
+.env.*
+!.env.deploy.example
+.env.deploy
+
+# 本地数据
+data
+*.db
+*.db-*
