@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# 环境变量含敏感凭证（API token 等），不要提交
+.env
+.env.*
+
+# Wrangler local state (dev server cache, local D1, temp bundles)
+.wrangler/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

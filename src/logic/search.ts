@@ -26,16 +26,17 @@ export async function useBgmSearch(
     const searchMode = isCharacter ? 'character' : 'person'
     
     
-    // 使用代理 API
-    const finalUrl = import.meta.env.PROD
-        ? '/api/search'
-        : 'http://localhost:8787/api/search'
-    
+    // 使用同源代理 API。
+    // 生产环境由 Cloudflare Pages Function (functions/api/search.ts) 接管；
+    // 本地开发由 Vite dev server 代理转发 (见 vite.config.ts 的 server.proxy)。
+    // 这样避免了硬编码 localhost:8787（需要单独启动 wrangler pages dev）。
+    const finalUrl = '/api/search'
+
     // 检查凭证是否存在
     if (!accessToken || !userAgent || accessToken === 'your_real_bangumi_access_token_here') {
         throw new SearchError('请在 .env 文件中配置正确的 Bangumi Access Token 和 User Agent。')
     }
-    
+
     const res = await fetch(finalUrl, {
       method: 'POST',
       headers: {
@@ -54,6 +55,10 @@ export async function useBgmSearch(
     if (!res.ok) {
       if (res.status === 401) {
         throw new SearchError('API 认证失败 (401)。请检查 Access Token 是否过期或无效。')
+      }
+      if (res.status === 405 || res.status === 404) {
+        // 代理端点不存在：本地未启动 functions，或生产环境 Pages Functions 未部署
+        throw new SearchError('搜索代理不可用 (代理端点未部署)。本地请运行 `npm run dev:functions`，生产请确认 Cloudflare Pages Functions 已部署 functions/api 目录。')
       }
       throw new SearchError(`API 请求失败: ${res.status} ${res.statusText}`)
     }

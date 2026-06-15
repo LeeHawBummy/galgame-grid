@@ -1,6 +1,11 @@
 name = "anime-role-grid"
+main = "worker.ts"
 compatibility_date = "2024-11-20"
-pages_build_output_dir = "dist"
+
+# 静态资源（前端构建产物）由 Workers 的 Static Assets 托管，
+# /api/* 之外的请求会交给 ASSETS binding 处理（见 worker.ts）。
+[assets]
+directory = "./dist"
 
 [[d1_databases]]
 binding = "DB"

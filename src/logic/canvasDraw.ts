@@ -31,13 +31,7 @@ export class CanvasGenerator {
         if (url.startsWith('blob:') || url.startsWith('data:')) {
             return url
         }
-        // 检查是否为VNDB的图片URL，如果是则使用我们自己的代理
-        if (
-            url.includes('vndb.org') || url.includes('dler.cloud')
-        ) {
-            return `http://localhost:5174/proxy/vndb?url=${encodeURIComponent(url)}`
-        }
-        // Bangumi图片使用原有的代理
+        // 所有外部图片统一走 wsrv.nl 代理（兼容 Bangumi / VNDB 等，规避防盗链与跨域）
         return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=png&n=-1&t=${Date.now()}`
     }
 

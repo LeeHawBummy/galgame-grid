@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:functions": "wrangler pages dev functions --compatibility-date=2024-11-20 --port 8787",
+    "dev:functions": "wrangler dev --port 8787",
     "build": "vue-tsc -b && vite build",
+    "build:worker": "vue-tsc -b && vite build",
+    "deploy": "npm run build && wrangler deploy",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@unocss/reset": "^66.5.9",
     "cropperjs": "^1.6.2",
     "express": "^5.2.1",
     "html2canvas": "^1.4.1",
