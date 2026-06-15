@@ -31,7 +31,13 @@ export class CanvasGenerator {
         if (url.startsWith('blob:') || url.startsWith('data:')) {
             return url
         }
-        // 所有外部图片统一走 wsrv.nl 代理（兼容 Bangumi / VNDB 等，规避防盗链与跨域）
+        // VNDB 图片服务器（t/s/ns.vndb.org）有 Referer 防盗链，必须带
+        // Referer: https://vndb.org/ 才能取图。wsrv.nl 回源不带 Referer 会被拦。
+        // 改走自建 /api/vndb-image 代理（后端会带正确 Referer + CORS 头）。
+        if (/vndb\.org/.test(url)) {
+            return `/api/vndb-image?url=${encodeURIComponent(url)}`
+        }
+        // Bangumi 等其它图片走 wsrv.nl（无防盗链，wsrv 速度快）
         return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=png&n=-1&t=${Date.now()}`
     }
 

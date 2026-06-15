@@ -30,6 +30,9 @@ export function useVideoExport() {
             // Bypass proxy for local blob/data URLs
             if (url.startsWith('blob:') || url.startsWith('data:')) {
                 img.src = url
+            } else if (/vndb\.org/.test(url)) {
+                // VNDB 有 Referer 防盗链，必须走自建代理（带正确 Referer）
+                img.src = `/api/vndb-image?url=${encodeURIComponent(url)}`
             } else {
                 img.src = `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=png&n=-1`
             }
