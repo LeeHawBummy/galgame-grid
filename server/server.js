@@ -29,6 +29,19 @@ const DB_PATH = process.env.DB_PATH || '/app/data/anime-grid.db'
 // 是否启用保存功能（不配 DB 时设 false，save 端点直接返回 200 但不落库）
 const SAVE_ENABLED = process.env.SAVE_ENABLED !== 'false'
 
+// 搜索结果缓存：相同请求 5 分钟内直接返回缓存，大幅降低对 Bangumi 的请求频率，
+// 避免触发限流（前端搜索框即时触发，极易刷爆搜索接口）
+const SEARCH_CACHE_TTL = 5 * 60 * 1000 // 5 分钟
+const searchCache = new Map() // key -> { data, status, expireAt }
+
+// 周期清理过期缓存，防止内存无限增长
+setInterval(() => {
+    const now = Date.now()
+    for (const [k, v] of searchCache) {
+        if (v.expireAt < now) searchCache.delete(k)
+    }
+}, 60 * 1000).unref?.()
+
 // ----------------------------- 数据库 -----------------------------
 let db = null
 if (SAVE_ENABLED) {
@@ -134,6 +147,13 @@ async function handleSearch(req, res, bodyText) {
         if (searchMode === 'subject') targetUrl = 'https://api.bgm.tv/v0/search/subjects'
         else if (searchMode === 'person') targetUrl = 'https://api.bgm.tv/v0/search/persons'
 
+        // 缓存命中检查（key 不含 token，不同用户共享搜索结果）
+        const cacheKey = `bgm:${searchMode}:${JSON.stringify(bangumiPayload)}`
+        const cached = searchCache.get(cacheKey)
+        if (cached && cached.expireAt > Date.now()) {
+            return json(cached.data, cached.status)
+        }
+
         const authHeader = req.headers['authorization']
 
         let response
@@ -166,12 +186,23 @@ async function handleSearch(req, res, bodyText) {
         } catch {
             data = { error: 'Upstream returned non-JSON response', raw: text }
         }
+        // 仅缓存成功响应（2xx），错误（超时/限流/4xx）不缓存，让用户能立即重试
+        if (response.status >= 200 && response.status < 300) {
+            searchCache.set(cacheKey, { data, status: response.status, expireAt: Date.now() + SEARCH_CACHE_TTL })
+        }
         return json(data, response.status)
     }
 
     // 原 VNDB 游戏搜索逻辑
     const { keyword, page = 1, results = 25 } = body
     if (!keyword) return json({ results: [] })
+
+    // 缓存命中检查
+    const cacheKey = `vndb:${keyword}:${page}:${results}`
+    const cached = searchCache.get(cacheKey)
+    if (cached && cached.expireAt > Date.now()) {
+        return { status: cached.status, headers: { ...cors(), 'Content-Type': 'application/json' }, body: cached.body }
+    }
 
     const vndbBody = {
         filters: ['search', '=', keyword],
@@ -190,6 +221,10 @@ async function handleSearch(req, res, bodyText) {
         UPSTREAM_TIMEOUT
     )
     const text = await resp.text()
+    // 仅缓存成功响应
+    if (resp.status >= 200 && resp.status < 300) {
+        searchCache.set(cacheKey, { status: resp.status, body: text, expireAt: Date.now() + SEARCH_CACHE_TTL })
+    }
     return { status: resp.status, headers: { ...cors(), 'Content-Type': 'application/json' }, body: text }
 }
 
